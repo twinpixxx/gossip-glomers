@@ -7,7 +7,9 @@ const Body = struct {
     echo: ?[]const u8 = null,
     node_id: ?[]const u8 = null,
     node_ids: ?[][]const u8 = null,
-    id: ?u64 = null
+    id: ?u64 = null,
+    message: ?i32 = null,
+    messages: ?[]i32 = null,
 };
 
 const Message = struct {
@@ -23,15 +25,23 @@ const MessageType = enum {
     echo_ok,
     generate,
     generate_ok,
+    broadcast,
+    broadcast_ok,
+    read,
+    read_ok,
+    topology,
+    topology_ok,
 };
 
 var node_id: []const u8 = "";
+var messages: std.ArrayList(i32) = .empty;
 
 pub fn main() !void {
     const allocator = std.heap.c_allocator;
 
     var line_buf: std.ArrayList(u8) = .empty;
     defer line_buf.deinit(allocator);
+    defer messages.deinit(allocator);
 
     var read_buf: [4096]u8 = undefined;
 
@@ -101,6 +111,30 @@ fn handleMessage(allocator: std.mem.Allocator, line: []const u8) !void {
           .msg_id = msg.body.msg_id,
           .in_reply_to = msg.body.msg_id,
           .id = generateId(),
+      }),
+
+      MessageType.broadcast => {
+          if (msg.body.message) |val| {
+              try messages.append(allocator, val);
+          }
+
+          try reply(msg, .{
+              .type = MessageType.broadcast_ok,
+              .in_reply_to = msg.body.msg_id,
+          });
+      },
+
+      MessageType.read => {
+          try reply(msg, .{
+              .type = MessageType.read_ok,
+              .messages = messages.items,
+              .in_reply_to = msg.body.msg_id,
+          });
+      },
+
+      MessageType.topology => try reply(msg, .{
+          .type = MessageType.topology_ok,
+          .in_reply_to = msg.body.msg_id,
       }),
 
       else => {},
