@@ -1,7 +1,7 @@
 const std = @import("std");
 
 const Body = struct {
-    type: []const u8,
+    type: MessageType,
     msg_id: ?u64 = null,
     in_reply_to: ?u64 = null,
     echo: ?[]const u8 = null,
@@ -14,6 +14,15 @@ const Message = struct {
     src: []const u8,
     dest: []const u8,
     body: Body,
+};
+
+const MessageType = enum {
+    init,
+    init_ok,
+    echo,
+    echo_ok,
+    generate,
+    generate_ok,
 };
 
 var node_id: []const u8 = "";
@@ -71,26 +80,30 @@ fn handleMessage(allocator: std.mem.Allocator, line: []const u8) !void {
 
     const msg = parsed.value;
 
-    if (std.mem.eql(u8, msg.body.type, "init")) {
-        node_id = try allocator.dupe(u8, msg.body.node_id orelse "");
-        try reply(msg, .{
-            .type = "init_ok",
-            .in_reply_to = msg.body.msg_id,
-        });
-    } else if (std.mem.eql(u8, msg.body.type, "echo")) {
-        try reply(msg, .{
-            .type = "echo_ok",
-            .msg_id = msg.body.msg_id,
-            .in_reply_to = msg.body.msg_id,
-            .echo = msg.body.echo,
-        });
-    } else if (std.mem.eql(u8, msg.body.type, "generate")) {
-        try reply(msg, .{
-            .type = "generate_ok",
-            .msg_id = msg.body.msg_id,
-            .in_reply_to = msg.body.msg_id,
-            .id = generateId(),
-        });
+    switch (msg.body.type) {
+      .init => {
+          node_id = try allocator.dupe(u8, msg.body.node_id orelse "");
+          try reply(msg, .{
+              .type = MessageType.init_ok,
+              .in_reply_to = msg.body.msg_id,
+          });
+      },
+
+      .echo => try reply(msg, .{
+          .type = MessageType.echo_ok,
+          .msg_id = msg.body.msg_id,
+          .in_reply_to = msg.body.msg_id,
+          .echo = msg.body.echo,
+      }),
+
+      .generate => try reply(msg, .{
+          .type = MessageType.generate_ok,
+          .msg_id = msg.body.msg_id,
+          .in_reply_to = msg.body.msg_id,
+          .id = generateId(),
+      }),
+
+      else => {},
     }
 }
 
