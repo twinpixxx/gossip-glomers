@@ -1,0 +1,8 @@
+.{
+    .name = .zigelstrom,
+    .version = "0.16.0",
+    .dependencies = .{
+    },
+    .paths = .{""},
+    .fingerprint = 0x528b347e3cd6f51d,
+}

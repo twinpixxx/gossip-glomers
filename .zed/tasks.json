@@ -4,7 +4,7 @@
 [
   {
     "label": "maelstrom",
-    "command": "zig build && ~/work/maelstrom/maelstrom test -w unique-ids --bin ~/work/zigelstrom/zig-out/bin/zigelstrom --time-limit 30 --rate 1000 --node-count 3 --availability total --nemesis partition",
+    "command": "zig build -Doptimize=ReleaseFast && ~/work/maelstrom/maelstrom test -w unique-ids --bin ~/work/zigelstrom/zig-out/bin/zigelstrom --time-limit 30 --rate 1000 --node-count 3 --availability total --nemesis partition",
     // "args": [],
     // Env overrides for the command, will be appended to the terminal's environment from the settings.
     // "env": { "foo": "bar" },
