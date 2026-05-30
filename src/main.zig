@@ -81,7 +81,7 @@ fn handleMessage(allocator: std.mem.Allocator, line: []const u8) !void {
     const msg = parsed.value;
 
     switch (msg.body.type) {
-      .init => {
+      MessageType.init => {
           node_id = try allocator.dupe(u8, msg.body.node_id orelse "");
           try reply(msg, .{
               .type = MessageType.init_ok,
@@ -89,14 +89,14 @@ fn handleMessage(allocator: std.mem.Allocator, line: []const u8) !void {
           });
       },
 
-      .echo => try reply(msg, .{
+      MessageType.echo => try reply(msg, .{
           .type = MessageType.echo_ok,
           .msg_id = msg.body.msg_id,
           .in_reply_to = msg.body.msg_id,
           .echo = msg.body.echo,
       }),
 
-      .generate => try reply(msg, .{
+      MessageType.generate => try reply(msg, .{
           .type = MessageType.generate_ok,
           .msg_id = msg.body.msg_id,
           .in_reply_to = msg.body.msg_id,
