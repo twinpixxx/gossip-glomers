@@ -56,4 +56,9 @@
     // Represents the tags for inline runnable indicators, or spawning multiple tasks at once.
     // "tags": []
   },
+  {
+    "label": "maelstrom serve",
+    "command": "zig build && ~/work/maelstrom/maelstrom serve",
+    "allow_concurrent_runs": false,
+  },
 ]
