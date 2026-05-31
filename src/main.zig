@@ -10,6 +10,7 @@ const Body = struct {
     id: ?u64 = null,
     message: ?i32 = null,
     messages: ?[]i32 = null,
+    topology: ?std.json.Value = null,
 };
 
 const Message = struct {
@@ -35,6 +36,7 @@ const MessageType = enum {
 
 var node_id: []const u8 = "";
 var messages: std.ArrayList(i32) = .empty;
+var topology: std.StringHashMap([][]const u8) = undefined;
 
 pub fn main() !void {
     const allocator = std.heap.c_allocator;
@@ -42,6 +44,8 @@ pub fn main() !void {
     var line_buf: std.ArrayList(u8) = .empty;
     defer line_buf.deinit(allocator);
     defer messages.deinit(allocator);
+    topology = std.StringHashMap([][]const u8).init(allocator);
+    defer topology.deinit();
 
     var read_buf: [4096]u8 = undefined;
 
@@ -132,10 +136,23 @@ fn handleMessage(allocator: std.mem.Allocator, line: []const u8) !void {
           });
       },
 
-      MessageType.topology => try reply(msg, .{
-          .type = MessageType.topology_ok,
-          .in_reply_to = msg.body.msg_id,
-      }),
+      MessageType.topology => {
+          if (msg.body.topology) |topo_val| {
+              var iterator = topo_val.object.iterator();
+              while (iterator.next()) |entry| {
+                  const neighbors_json = entry.value_ptr.array.items;
+                  var neighbors = try allocator.alloc([]const u8, neighbors_json.len);
+                  for (neighbors_json, 0..) |v, i| {
+                      neighbors[i] = try allocator.dupe(u8, v.string);
+                  }
+                  try topology.put(try allocator.dupe(u8, entry.key_ptr.*), neighbors);
+              }
+          }
+          try reply(msg, .{
+              .type = MessageType.topology_ok,
+              .in_reply_to = msg.body.msg_id,
+          });
+      },
 
       else => {},
     }
